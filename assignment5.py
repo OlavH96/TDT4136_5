@@ -3,6 +3,7 @@
 import copy
 import itertools
 
+import random
 
 class CSP:
     def __init__(self):
@@ -15,6 +16,8 @@ class CSP:
         # self.constraints[i][j] is a list of legal value pairs for
         # the variable pair (i, j)
         self.constraints = {}
+        self.backtrack_counter = 0
+        self.failure_counter = 0
 
     def add_variable(self, name, domain):
         """Add a new variable to the CSP. 'name' is the variable name
@@ -87,6 +90,28 @@ class CSP:
         return self.backtrack(assignment)
 
     def backtrack(self, assignment):
+        self.backtrack_counter += 1
+        print(assignment)
+        should_return = True
+        for a in assignment:
+            if len(a) != 1:
+                should_return = False
+        if should_return: return assignment
+
+        # if all(map(lambda l: len(l) == 1, assignment.itervalues())):
+        #     # All assignment lists have lenght = 1, we are done
+        #     return assignment
+        var = self.select_unassigned_variable(assignment)
+        for value in assignment[var]:
+            assignment_copy = copy.deepcopy(assignment)
+            assignment_copy[var] = [value]
+            if self.inference(assignment_copy, self.get_all_neighboring_arcs(var)):
+                result = self.backtrack(assignment_copy)
+                if result:
+                    return result
+        self.failure_counter += 1
+        print("Failed","Failures",self.failure_counter,"Backtracks",self.backtrack_counter)
+        return False
         """The function 'Backtrack' from the pseudocode in the
         textbook.
 
@@ -112,6 +137,7 @@ class CSP:
         """
         # TODO: IMPLEMENT THIS
         pass
+        return assignment
 
     def select_unassigned_variable(self, assignment):
         """The function 'Select-Unassigned-Variable' from the pseudocode
@@ -120,9 +146,31 @@ class CSP:
         of legal values has a length greater than one.
         """
         # TODO: IMPLEMENT THIS
+        len_over_1 = list(filter(lambda a: len(assignment[a]) > 1, assignment))
+        print("select_unassigned_variable")
+        print(assignment)
+        print(len_over_1)
+        choice = random.choice(len_over_1)
+        print("Choice",choice)
+        return choice
+        #return random.choice(filter(lambda i: len(i[1]) > 1, assignment))[0]
+
         pass
 
     def inference(self, assignment, queue):
+        print("Interference")
+        print(assignment)
+        for i in assignment:
+            print(i, assignment[i])
+        print(queue)
+
+        while queue:
+            (xi, xj) = queue.pop(0)
+            if self.revise(assignment, xi, xj):
+                if len(assignment[xi]) == 0: return False
+
+                for xk in self.get_all_neighboring_arcs(xi):
+                    queue.append(xk)
         """The function 'AC-3' from the pseudocode in the textbook.
         'assignment' is the current partial assignment, that contains
         the lists of legal values for each undecided variable. 'queue'
@@ -130,8 +178,22 @@ class CSP:
         """
         # TODO: IMPLEMENT THIS
         pass
+        return True
 
     def revise(self, assignment, i, j):
+        revised = False
+
+        for x in assignment[i]:
+            print(x)
+            satisfiable = False
+            for y in assignment[j]:
+                if (x, y) in self.constraints[i][j]:
+                    satisfiable = True
+                    break
+            if not satisfiable:
+                assignment[i].remove(x)
+                revised = True
+
         """The function 'Revise' from the pseudocode in the textbook.
         'assignment' is the current partial assignment, that contains
         the lists of legal values for each undecided variable. 'i' and
@@ -141,7 +203,7 @@ class CSP:
         legal values in 'assignment'.
         """
         # TODO: IMPLEMENT THIS
-        pass
+        return revised
 
 
 def create_map_coloring_csp():
@@ -167,8 +229,8 @@ def create_sudoku_csp(filename):
     file named 'filename' in the current directory.
     """
     csp = CSP()
-    board = map(lambda x: x.strip(), open(filename, 'r'))
-
+    board = list(map(lambda x: x.strip(), open(filename, 'r')))  # > python 2 :c
+    # print(board)
     for row in range(9):
         for col in range(9):
             if board[row][col] == '0':
@@ -198,9 +260,9 @@ def print_sudoku_solution(solution):
     """
     for row in range(9):
         for col in range(9):
-            print(solution['%d-%d' % (row, col)][0])
+            print(solution['%d-%d' % (row, col)][0], end="")
             if col == 2 or col == 5:
-                print('|'),
+                print('|', end=""),
         print()
         if row == 2 or row == 5:
-            print('------+-------+------')
+            print('---+---+---')
