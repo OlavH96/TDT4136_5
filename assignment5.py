@@ -5,6 +5,7 @@ import itertools
 
 import random
 
+
 class CSP:
     def __init__(self):
         # self.variables is a list of the variable names in the CSP
@@ -16,8 +17,6 @@ class CSP:
         # self.constraints[i][j] is a list of legal value pairs for
         # the variable pair (i, j)
         self.constraints = {}
-        self.backtrack_counter = 0
-        self.failure_counter = 0
 
     def add_variable(self, name, domain):
         """Add a new variable to the CSP. 'name' is the variable name
@@ -33,8 +32,7 @@ class CSP:
         'a' and the second component comes from list 'b'.
         """
         product = itertools.product(a, b)
-        print("\n\n",product,"\n\n")
-        return list(product)
+        return list(product) # Have to make into list else you get some weird object which does not work with python3
 
     def get_all_arcs(self):
         """Get a list of all arcs/constraints that have been defined in
@@ -64,6 +62,7 @@ class CSP:
 
         # Next, filter this list of value pairs through the function
         # 'filter_function', so that only the legal value pairs remain
+        # again, have to change to list, else it does not work with python3
         self.constraints[i][j] = list(filter(lambda value_pair: filter_function(*value_pair), self.constraints[i][j]))
 
     def add_all_different_constraint(self, variables):
@@ -142,34 +141,36 @@ class CSP:
         in 'assignment' that have not yet been decided, i.e. whose list
         of legal values has a length greater than one.
         """
-        # TODO: IMPLEMENT THIS
         len_over_1 = list(filter(lambda a: len(assignment[a]) > 1, assignment))
-        print(len_over_1)
         choice = random.choice(len_over_1)
         return choice
-        #return random.choice(filter(lambda i: len(i[1]) > 1, assignment))[0]
-
-        pass
 
     def inference(self, assignment, queue):
-
-        while queue:
-            (xi, xj) = queue.pop(0)
-            if self.revise(assignment, xi, xj):
-                if len(assignment[xi]) == 0: return False
-
-                for xk in self.get_all_neighboring_arcs(xi):
-                    queue.append(xk)
         """The function 'AC-3' from the pseudocode in the textbook.
         'assignment' is the current partial assignment, that contains
         the lists of legal values for each undecided variable. 'queue'
         is the initial queue of arcs that should be visited.
         """
-        # TODO: IMPLEMENT THIS
-        pass
+
+        while queue:
+            (xi, xj) = queue.pop(0)
+            if self.revise(assignment, xi, xj):
+                if len(assignment[xi]) == 0:
+                    return False
+
+                for xk in self.get_all_neighboring_arcs(xi):
+                    queue.append(xk)
         return True
 
     def revise(self, assignment, i, j):
+        """The function 'Revise' from the pseudocode in the textbook.
+               'assignment' is the current partial assignment, that contains
+               the lists of legal values for each undecided variable. 'i' and
+               'j' specifies the arc that should be visited. If a value is
+               found in variable i's domain that doesn't satisfy the constraint
+               between i and j, the value should be deleted from i's list of
+               legal values in 'assignment'.
+           """
         revised = False
 
         for x in assignment[i]:
@@ -182,15 +183,6 @@ class CSP:
                 assignment[i].remove(x)
                 revised = True
 
-        """The function 'Revise' from the pseudocode in the textbook.
-        'assignment' is the current partial assignment, that contains
-        the lists of legal values for each undecided variable. 'i' and
-        'j' specifies the arc that should be visited. If a value is
-        found in variable i's domain that doesn't satisfy the constraint
-        between i and j, the value should be deleted from i's list of
-        legal values in 'assignment'.
-        """
-        # TODO: IMPLEMENT THIS
         return revised
 
 
@@ -218,7 +210,6 @@ def create_sudoku_csp(filename):
     """
     csp = CSP()
     board = list(map(lambda x: x.strip(), open(filename, 'r')))  # > python 2 :c
-    # print(board)
     for row in range(9):
         for col in range(9):
             if board[row][col] == '0':
