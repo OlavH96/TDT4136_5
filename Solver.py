@@ -1,14 +1,17 @@
-import assignment5
-from Sudoku import *
+import assignment5 as solver
+import itertools
+
 if __name__ == '__main__':
 
-
     print("Soduku Solver")
-    csp = assignment5.create_sudoku_csp("boards/easy.txt")
+    csp = solver.create_sudoku_csp("boards/easy.txt")
     print(csp.variables)
     print(csp.domains)
+    print("Constraints")
     print(csp.constraints)
 
-    assignment = csp.backtracking_search()
-    print(assignment)
-    assignment5.print_sudoku_solution(assignment)
+    solution = csp.backtracking_search()
+    if solution:
+        solver.print_sudoku_solution(solution)
+    else:
+        print("No solution")

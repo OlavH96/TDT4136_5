@@ -32,7 +32,9 @@ class CSP:
         the lists 'a' and 'b', where the first component comes from list
         'a' and the second component comes from list 'b'.
         """
-        return itertools.product(a, b)
+        product = itertools.product(a, b)
+        print("\n\n",product,"\n\n")
+        return list(product)
 
     def get_all_arcs(self):
         """Get a list of all arcs/constraints that have been defined in
@@ -56,13 +58,13 @@ class CSP:
         to add the constraint the other way, j -> i, as all constraints
         are supposed to be two-way connections!
         """
-        if not j in self.constraints[i]:
+        if j not in self.constraints[i]:
             # First, get a list of all possible pairs of values between variables i and j
             self.constraints[i][j] = self.get_all_possible_pairs(self.domains[i], self.domains[j])
 
         # Next, filter this list of value pairs through the function
         # 'filter_function', so that only the legal value pairs remain
-        self.constraints[i][j] = filter(lambda value_pair: filter_function(*value_pair), self.constraints[i][j])
+        self.constraints[i][j] = list(filter(lambda value_pair: filter_function(*value_pair), self.constraints[i][j]))
 
     def add_all_different_constraint(self, variables):
         """Add an Alldiff constraint between all of the variables in the
@@ -90,17 +92,40 @@ class CSP:
         return self.backtrack(assignment)
 
     def backtrack(self, assignment):
-        self.backtrack_counter += 1
-        print(assignment)
-        should_return = True
-        for a in assignment:
-            if len(a) != 1:
-                should_return = False
-        if should_return: return assignment
+        """The function 'Backtrack' from the pseudocode in the
+                textbook.
 
-        # if all(map(lambda l: len(l) == 1, assignment.itervalues())):
-        #     # All assignment lists have lenght = 1, we are done
-        #     return assignment
+                The function is called recursively, with a partial assignment of
+                values 'assignment'. 'assignment' is a dictionary that contains
+                a list of all legal values for the variables that have *not* yet
+                been decided, and a list of only a single value for the
+                variables that *have* been decided.
+
+                When all of the variables in 'assignment' have lists of length
+                one, i.e. when all variables have been assigned a value, the
+                function should return 'assignment'. Otherwise, the search
+                should continue. When the function 'inference' is called to run
+                the AC-3 algorithm, the lists of legal values in 'assignment'
+                should get reduced as AC-3 discovers illegal values.
+
+                IMPORTANT: For every iteration of the for-loop in the
+                pseudocode, you need to make a deep copy of 'assignment' into a
+                new variable before changing it. Every iteration of the for-loop
+                should have a clean slate and not see any traces of the old
+                assignments and inferences that took place in previous
+                iterations of the loop.
+                """
+        print("Backtrack")
+        print(assignment)
+        # should_return = True
+        # for a in assignment:
+        #     if len(a) != 1:
+        #         should_return = False
+        # if should_return: return assignment
+
+        if all(map(lambda l: len(assignment[l]) == 1, assignment)):
+            # All assignment lists have lenght = 1, we are done
+            return assignment
         var = self.select_unassigned_variable(assignment)
         for value in assignment[var]:
             assignment_copy = copy.deepcopy(assignment)
@@ -109,35 +134,7 @@ class CSP:
                 result = self.backtrack(assignment_copy)
                 if result:
                     return result
-        self.failure_counter += 1
-        print("Failed","Failures",self.failure_counter,"Backtracks",self.backtrack_counter)
         return False
-        """The function 'Backtrack' from the pseudocode in the
-        textbook.
-
-        The function is called recursively, with a partial assignment of
-        values 'assignment'. 'assignment' is a dictionary that contains
-        a list of all legal values for the variables that have *not* yet
-        been decided, and a list of only a single value for the
-        variables that *have* been decided.
-
-        When all of the variables in 'assignment' have lists of length
-        one, i.e. when all variables have been assigned a value, the
-        function should return 'assignment'. Otherwise, the search
-        should continue. When the function 'inference' is called to run
-        the AC-3 algorithm, the lists of legal values in 'assignment'
-        should get reduced as AC-3 discovers illegal values.
-
-        IMPORTANT: For every iteration of the for-loop in the
-        pseudocode, you need to make a deep copy of 'assignment' into a
-        new variable before changing it. Every iteration of the for-loop
-        should have a clean slate and not see any traces of the old
-        assignments and inferences that took place in previous
-        iterations of the loop.
-        """
-        # TODO: IMPLEMENT THIS
-        pass
-        return assignment
 
     def select_unassigned_variable(self, assignment):
         """The function 'Select-Unassigned-Variable' from the pseudocode
@@ -147,22 +144,14 @@ class CSP:
         """
         # TODO: IMPLEMENT THIS
         len_over_1 = list(filter(lambda a: len(assignment[a]) > 1, assignment))
-        print("select_unassigned_variable")
-        print(assignment)
         print(len_over_1)
         choice = random.choice(len_over_1)
-        print("Choice",choice)
         return choice
         #return random.choice(filter(lambda i: len(i[1]) > 1, assignment))[0]
 
         pass
 
     def inference(self, assignment, queue):
-        print("Interference")
-        print(assignment)
-        for i in assignment:
-            print(i, assignment[i])
-        print(queue)
 
         while queue:
             (xi, xj) = queue.pop(0)
@@ -184,7 +173,6 @@ class CSP:
         revised = False
 
         for x in assignment[i]:
-            print(x)
             satisfiable = False
             for y in assignment[j]:
                 if (x, y) in self.constraints[i][j]:
